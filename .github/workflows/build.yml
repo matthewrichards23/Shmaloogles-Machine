@@ -1,0 +1,24 @@
+name: Build Shmaloogle Machine (macOS universal)
+on:
+  workflow_dispatch:
+  push:
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Build
+        run: cmake --build build --config Release -j 4
+      - name: Sign (ad-hoc) and zip
+        run: |
+          mkdir out
+          find build -name "*.vst3" -maxdepth 6 -exec cp -R {} out/ \;
+          find build -name "*.component" -maxdepth 6 -exec cp -R {} out/ \;
+          for p in out/*; do codesign --force --deep -s - "$p"; done
+          cd out && zip -ry ../ShmaloogleMachine-mac.zip .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ShmaloogleMachine-mac
+          path: ShmaloogleMachine-mac.zip
